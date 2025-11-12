@@ -1,57 +1,61 @@
 import React, { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import "./RegistrarPortal.css";
+
 import Header from "./components/Header";
 import StatCard from "./components/StatCard";
 import RequestsList from "./pages/RequestsList";
-import "./RegistrarPortal.css";
+import ActivityPanel from "./components/ActivityPanel";
+import Footer from "../../../components/layout/Footer";
 
 export default function RegistrarPortal() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
 
   const [requests, setRequests] = useState([
     {
-      id: 1,
+      id: "REQ-2025-001",
       studentName: "John Doe",
       studentId: "2024-001",
       documentType: "Transcript of Records",
       purpose: "Job Application",
       copies: 2,
       status: "processing",
-      date: "2024-01-15",
+      date: "Jan 15, 2025",
       proofImage: "/proof1.jpg",
     },
     {
-      id: 2,
+      id: "REQ-2025-002",
       studentName: "Jane Smith",
       studentId: "2024-002",
       documentType: "Certificate of Good Moral",
       purpose: "Scholarship",
       copies: 1,
       status: "approved",
-      date: "2024-01-14",
+      date: "Jan 14, 2025",
       proofImage: "",
     },
     {
-      id: 3,
+      id: "REQ-2025-003",
       studentName: "Jan Sith",
       studentId: "2024-003",
       documentType: "Certificate of Enrollment",
       purpose: "Internship",
       copies: 3,
       status: "ready",
-      date: "2024-02-01",
+      date: "Feb 1, 2025",
       proofImage: "",
     },
     {
-      id: 4,
+      id: "REQ-2025-004",
       studentName: "Blissy Chavez",
       studentId: "2024-004",
       documentType: "Certificate of Good Moral",
       purpose: "Scholarship",
       copies: 1,
       status: "rejected",
-      date: "2024-01-14",
+      date: "Jan 14, 2025",
       proofImage: "",
     },
   ]);
@@ -69,71 +73,87 @@ export default function RegistrarPortal() {
     navigate("/registrar-login", { replace: true });
   };
 
-  const stats = {
-    total: requests.length,
-    processing: requests.filter((r) => r.status === "processing").length,
-    approved: requests.filter((r) => r.status === "approved").length,
-    ready: requests.filter((r) => r.status === "ready").length,
-    rejected: requests.filter((r) => r.status === "rejected").length,
-  };
+  const stats = [
+    {
+      label: "Total Requests",
+      value: requests.length,
+      color: "stat-total",
+      link: "/registrar?status=all",
+    },
+    {
+      label: "Processing",
+      value: requests.filter((r) => r.status === "processing").length,
+      color: "stat-warning",
+      link: "/registrar?status=processing",
+    },
+    {
+      label: "Approved",
+      value: requests.filter((r) => r.status === "approved").length,
+      color: "stat-info",
+      link: "/registrar?status=approved",
+    },
+    {
+      label: "Ready for Pickup",
+      value: requests.filter((r) => r.status === "ready").length,
+      color: "stat-success",
+      link: "/registrar?status=ready",
+    },
+    {
+      label: "Rejected",
+      value: requests.filter((r) => r.status === "rejected").length,
+      color: "stat-danger",
+      link: "/registrar?status=rejected",
+    },
+  ];
 
-  // Current filter from query string
   const currentFilter = searchParams.get("status") || "all";
-
-  // Filtered requests based on StatCard click
   const filteredRequests =
     currentFilter === "all"
       ? requests
       : requests.filter((r) => r.status === currentFilter);
 
+  // Registrar activity feed
+  const activities = [
+    { id: 1, action: "Approved REQ-2025-002", time: "1 hour ago" },
+    { id: 2, action: "Marked REQ-2025-003 as ready for pickup", time: "4 hours ago" },
+    { id: 3, action: "Rejected REQ-2025-004", time: "Yesterday" },
+  ];
+
   return (
-    <div className="admin-portal-container">
-      <Header title="Registrar Portal" onLogout={handleLogout} />
+    <div className="portal-container">
 
+      <Header registrarName="Jane Doe" />
+
+    <div className="portal-body">
+      {/* Stats Section */}
       <div className="stats-grid">
-        <StatCard
-          label="Total Requests"
-          value={stats.total}
-          color="stat-total"
-          link="/registrar?status=all"
-        />
-        <StatCard
-          label="Processing"
-          value={stats.processing}
-          color="stat-warning"
-          link="/registrar?status=processing"
-        />
-        <StatCard
-          label="Approved"
-          value={stats.approved}
-          color="stat-info"
-          link="/registrar?status=approved"
-        />
-        <StatCard
-          label="Ready for Pickup"
-          value={stats.ready}
-          color="stat-success"
-          link="/registrar?status=ready"
-        />
-        <StatCard
-          label="Rejected"
-          value={stats.rejected}
-          color="stat-danger"
-          link="/registrar?status=rejected"
-        />
+        {stats.map((stat, index) => (
+          <StatCard
+            key={index}
+            label={stat.label}
+            value={stat.value}
+            color={stat.color}
+            link={stat.link}
+          />
+        ))}
       </div>
 
-      {/* Scrollable requests table */}
+      {/* Requests Section */}
       <div className="scrollable-section">
-        <h2 style={{ marginBottom: "16px", textTransform: "capitalize" }}>
-          {currentFilter} Requests
-        </h2>
-        <RequestsList requests={filteredRequests} onStatusChange={handleStatusChange} />
+        <RequestsList
+          requests={filteredRequests}
+          onStatusChange={handleStatusChange}
+        />
       </div>
 
-      <footer className="admin-footer">
-        © 2025 Registrar Portal. All rights reserved.
-      </footer>
+      {/* Activity Panel BELOW table */}
+      <div className="activity-section">
+        <ActivityPanel activities={activities} />
+      </div>
+      </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

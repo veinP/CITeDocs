@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useAuthContext } from "../../../auth/context/AuthContext"; // ✅ Import context
+import { useAuthContext } from "../../../auth/context/AuthContext";
 import appLogo from "../../../../assets/images/app_logo.png";
 
 const Header = ({ studentName }) => {
