@@ -34,27 +34,15 @@ export default function RequestDetailsModal({
           <div className="detail-row"><strong>Date Requested:</strong> {request.date}</div>
 
           <div className="detail-row">
-            <strong>Proof Image:</strong>
-            {request.proofImage ? (
-              <img
-                src={request.proofImage}
-                alt="Proof"
-                className="proof-image"
-              />
-            ) : (
-              <em>No proof uploaded</em>
-            )}
-          </div>
-
-          <div className="detail-row">
             <strong>Status:</strong>
             <select
               value={newStatus}
               onChange={(e) => setNewStatus(e.target.value)}
             >
+              <option value="pending">Pending</option>
               <option value="processing">Processing</option>
               <option value="approved">Approved</option>
-              <option value="ready">Ready</option>
+              <option value="completed">Completed</option>
               <option value="rejected">Rejected</option>
             </select>
           </div>

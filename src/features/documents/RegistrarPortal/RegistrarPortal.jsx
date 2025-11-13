@@ -43,7 +43,7 @@ export default function RegistrarPortal() {
       documentType: "Certificate of Enrollment",
       purpose: "Internship",
       copies: 3,
-      status: "ready",
+      status: "completed",
       date: "Feb 1, 2025",
       proofImage: "",
     },
@@ -56,6 +56,17 @@ export default function RegistrarPortal() {
       copies: 1,
       status: "rejected",
       date: "Jan 14, 2025",
+      proofImage: "",
+    },
+    {
+      id: "REQ-2025-005",
+      studentName: "Vien Pang",
+      studentId: "2024-005",
+      documentType: "Transcript of Records",
+      purpose: "Internship",
+      copies: 8,
+      status: "pending",
+      date: "Dec 19, 2025",
       proofImage: "",
     },
   ]);
@@ -81,6 +92,12 @@ export default function RegistrarPortal() {
       link: "/registrar?status=all",
     },
     {
+      label: "Pending",
+      value: requests.filter((r) => r.status === "pending").length,
+      color: "stat-pending",
+      link: "/registrar?status=pending",
+    },
+    {
       label: "Processing",
       value: requests.filter((r) => r.status === "processing").length,
       color: "stat-warning",
@@ -89,11 +106,11 @@ export default function RegistrarPortal() {
     {
       label: "Approved",
       value: requests.filter((r) => r.status === "approved").length,
-      color: "stat-info",
+      color: "stat-approved",
       link: "/registrar?status=approved",
     },
     {
-      label: "Ready for Pickup",
+      label: "Completed",
       value: requests.filter((r) => r.status === "ready").length,
       color: "stat-success",
       link: "/registrar?status=ready",
@@ -112,7 +129,6 @@ export default function RegistrarPortal() {
       ? requests
       : requests.filter((r) => r.status === currentFilter);
 
-  // Registrar activity feed
   const activities = [
     { id: 1, action: "Approved REQ-2025-002", time: "1 hour ago" },
     { id: 2, action: "Marked REQ-2025-003 as ready for pickup", time: "4 hours ago" },
@@ -121,35 +137,34 @@ export default function RegistrarPortal() {
 
   return (
     <div className="portal-container">
-
       <Header registrarName="Jane Doe" />
 
-    <div className="portal-body">
-      {/* Stats Section */}
-      <div className="stats-grid">
-        {stats.map((stat, index) => (
-          <StatCard
-            key={index}
-            label={stat.label}
-            value={stat.value}
-            color={stat.color}
-            link={stat.link}
+      <div className="portal-body">
+        {/* Stats Section */}
+        <div className="stats-grid">
+          {stats.map((stat, index) => (
+            <StatCard
+              key={index}
+              label={stat.label}
+              value={stat.value}
+              color={stat.color}
+              link={stat.link}
+            />
+          ))}
+        </div>
+
+        {/* Requests Section */}
+        <div className="scrollable-section">
+          <RequestsList
+            requests={filteredRequests}
+            onStatusChange={handleStatusChange}
           />
-        ))}
-      </div>
+        </div>
 
-      {/* Requests Section */}
-      <div className="scrollable-section">
-        <RequestsList
-          requests={filteredRequests}
-          onStatusChange={handleStatusChange}
-        />
-      </div>
-
-      {/* Activity Panel BELOW table */}
-      <div className="activity-section">
-        <ActivityPanel activities={activities} />
-      </div>
+        {/* Activity Panel BELOW table */}
+        <div className="activity-section">
+          <ActivityPanel activities={activities} />
+        </div>
       </div>
 
       {/* Footer */}

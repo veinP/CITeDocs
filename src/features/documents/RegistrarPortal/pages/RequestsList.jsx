@@ -51,9 +51,10 @@ export default function RequestsList({ requests = [], onStatusChange }) {
             className="filter-select"
           >
             <option value="all">All</option>
+            <option value="pending">Pending</option>
             <option value="processing">Processing</option>
             <option value="approved">Approved</option>
-            <option value="ready">Ready</option>
+            <option value="completed">Completed</option>
             <option value="rejected">Rejected</option>
           </select>
         </div>
