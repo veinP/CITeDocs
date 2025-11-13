@@ -136,25 +136,11 @@
   font-family: "Montserrat", sans-serif;
 }
 
-.badge-pending {
-  background-color: #fef3c7;
-  color: #92400e;
-}
-
-.badge-approved {
-  background-color: #dbeafe;
-  color: #1e40af;
-}
-
-.badge-ready {
-  background-color: #d1fae5;
-  color: #065f46;
-}
-
-.badge-rejected {
-  background-color: #fee2e2;
-  color: #991b1b;
-}
+.badge-processing { background-color: #f59e0b; }
+.badge-approved { background-color: #10b981; }
+.badge-completed { background-color: #3b82f6; }
+.badge-rejected { background-color: #dc2626; }
+.badge-default { background-color: #f0e007; }
 
 .table {
   width: 100%;

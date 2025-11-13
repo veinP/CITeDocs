@@ -330,9 +330,10 @@ nav {
   font-family: "Bebas Neue", cursive;
 }
 
+.stat-pending { color: #f0e007; }
 .stat-warning { color: #f59e0b; }
-.stat-info { color: #3b82f6; }
-.stat-success { color: #10b981; }
+.stat-approved { color: #10b981; }
+.stat-success { color: #3b82f6; }
 .stat-danger { color: #dc2626; }
 
 /* TABLE HEADER (registrar) */
@@ -642,7 +643,14 @@ footer {
 }
 
 .badge-processing { background-color: #f59e0b; }
-.badge-approved { background-color: #3b82f6; }
-.badge-ready { background-color: #10b981; }
+.badge-approved { background-color: #10b981; }
+.badge-completed { background-color: #3b82f6; }
 .badge-rejected { background-color: #dc2626; }
-.badge-default { background-color: #6b7280; }
+.badge-default { background-color: #f0e007; }
+
+.table-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* adds space between search input and select */
+}
+
