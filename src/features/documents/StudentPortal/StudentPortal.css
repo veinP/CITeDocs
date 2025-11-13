@@ -94,8 +94,8 @@
 
 .stat-card.stat-yellow:hover {
   background-color: #FDB714 !important; /* keep exact yellow */
-  border-top-color: #E5A800 !important; 
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); /* subtle neutral shadow */
+  box-shadow: 0 8px 20px rgba(253, 183, 20, 0.35);
+  border-top-color: #FDB714;
 }
 
 .stat-card.stat-light:hover,
