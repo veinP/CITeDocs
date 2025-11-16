@@ -21,9 +21,22 @@ export default function useAuth() {
     }
   };
 
+  const forgotPassword = (email) => {
+    setError(null);
+
+    if (email === 'registrar@cit.edu') {
+      return 'A password reset link has been sent to registrar@cit.edu';
+    }
+    if (email === 'student@cit.edu') {
+      return 'A password reset link has been sent to student@cit.edu';
+    }
+    setError('Email not found in the system.');
+    return null;
+  };
+
   const logout = () => {
     setUser(null);
   };
 
-  return { user, error, login, logout };
+  return { user, error, login, logout, forgotPassword};
 }

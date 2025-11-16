@@ -96,7 +96,7 @@ const handleSubmit = async (e) => {
               </Link>
 
               <div className="forgot-password">
-                <Link to="/forgot-password">Forgot Password?</Link>
+                <Link to="/forgot-password/student">Forgot Password?</Link>
               </div>
             </form>
           </div>
