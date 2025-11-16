@@ -102,7 +102,7 @@ export default function RegistrarLogin() {
               </Link>
 
               <div className="forgot-password">
-                <Link to="/forgot-password">Forgot Password?</Link>
+                <Link to="/forgot-password/registrar">Forgot Password?</Link>
               </div>
             </form>
           </div>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState } from "react";
 
 const AuthContext = createContext();
 
@@ -7,9 +7,10 @@ export function AuthProvider({ children }) {
     const savedUser = localStorage.getItem("user");
     return savedUser ? JSON.parse(savedUser) : null;
   });
+
   const [error, setError] = useState(null);
 
-  // Mock users — replace this with your API or Supabase integration later
+  // Mock users 
   const users = [
     {
       email: "student@cit.edu",
@@ -25,8 +26,10 @@ export function AuthProvider({ children }) {
     },
   ];
 
+  // LOGIN
   const login = async (email, password, expectedRole) => {
     setError(null);
+
     const foundUser = users.find(
       (u) => u.email === email && u.password === password
     );
@@ -36,7 +39,7 @@ export function AuthProvider({ children }) {
       return null;
     }
 
-    // ✅ Enforce role check
+    // Enforce login page role
     if (foundUser.role !== expectedRole) {
       setError(
         `Unauthorized: Please use the ${
@@ -51,13 +54,38 @@ export function AuthProvider({ children }) {
     return foundUser;
   };
 
+  // FORGOT PASSWORD 
+
+  const forgotPassword = (email) => {
+    setError(null);
+
+    const foundUser = users.find((u) => u.email === email);
+
+    if (!foundUser) {
+      setError("Email not found in the system.");
+      return null;
+    }
+
+    // Success Message
+    return `A password reset link has been sent to ${email}`;
+  };
+
+  // LOGOUT
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, error }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        forgotPassword,
+        error,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

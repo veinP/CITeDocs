@@ -11,6 +11,8 @@ import ClaimSlip from "./features/documents/ClaimSlip/ClaimSlip";
 import StudentPortal from "./features/documents/StudentPortal/StudentPortal";
 import RequestsList from "./features/documents/StudentPortal/pages/RequestsList";
 import DocumentRequest from "./features/documents/DocumentRequest/DocumentRequest";
+import ForgotPasswordPage from "./features/auth/ForgotPassword/ForgotPasswordPage";
+
 
 
 import { AuthProvider, useAuthContext } from "./features/auth/context/AuthContext";
@@ -45,6 +47,9 @@ function AppContent() {
           {/* Registrar Auth */}
           <Route path="/registrar-login" element={<RegistrarLogin />} />
           <Route path="/registrar-register" element={<RegistrarRegister />} />
+
+          {/* Forgot Password Route */}
+          <Route path="/forgot-password/:role" element={<ForgotPasswordPage />} />
 
           {/* Student Portal */}
           <Route
