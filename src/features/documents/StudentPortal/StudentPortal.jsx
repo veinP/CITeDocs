@@ -34,7 +34,7 @@ const StudentPortal = () => {
     },
     {
       title: "Ready for Pickup",
-      subtitle: "Completed documents",
+      subtitle: "Approved documents",
       value: "2",
       icon: "✓",
       variant: "white",
