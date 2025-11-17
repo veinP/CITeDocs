@@ -68,11 +68,43 @@ export default function DocumentRequest() {
     }
   };
 
+  const generateRequestId = () => {
+    const currentYear = new Date().getFullYear();
+    const yearPrefix = `REQ-${currentYear}-`;
+    
+    // Find the highest sequence number for the current year
+    const yearRequests = userRequests.filter(req => req.id.startsWith(yearPrefix));
+    let maxSeq = 0;
+    
+    yearRequests.forEach(req => {
+      const seqStr = req.id.replace(yearPrefix, '');
+      const seqNum = parseInt(seqStr, 10);
+      if (!isNaN(seqNum) && seqNum > maxSeq) {
+        maxSeq = seqNum;
+      }
+    });
+    
+    // Increment and format with zero-padding
+    const nextSeq = maxSeq + 1;
+    return `${yearPrefix}${nextSeq.toString().padStart(3, '0')}`;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    // Validate required fields
+    if (!formData.copies || formData.copies < 1) {
+      alert("Please enter a valid number of copies (at least 1).");
+      return;
+    }
+
+    if (!formData.proofFile) {
+      alert("Please upload a proof of payment file.");
+      return;
+    }
+
     const newRequest = {
-      id: `REQ-${Date.now().toString().slice(-4)}`,
+      id: generateRequestId(),
       documentLabel:
         documentTypes.find((doc) => doc.value === formData.documentType)
           ?.label || "",
@@ -130,7 +162,7 @@ export default function DocumentRequest() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="form-grid">
+          <form onSubmit={handleSubmit} className="form-grid" noValidate>
             <div className="form-group">
               <label>Student ID</label>
               <input
@@ -180,27 +212,27 @@ export default function DocumentRequest() {
             </div>
 
             <div className="form-group">
-              <label>Number of Copies</label>
+              <label>Number of Copies <span style={{ color: "red" }}>*</span></label>
               <input
                 type="number"
                 name="copies"
                 min="1"
                 value={formData.copies}
                 onChange={handleChange}
-                required
               />
             </div>
 
             {/* ✅ Single styled upload input */}
             <div className="file-upload">
               <div className="upload-icon">📤</div>
-              <p className="upload-title">Proof of Payment Upload</p>
+              <p className="upload-title">Proof of Payment Upload <span style={{ color: "red" }}>*</span></p>
               <p className="upload-subtitle">
                 Upload your payment receipt here
               </p>
               <input
                 type="file"
                 id="proofFile"
+                name="proofFile"
                 accept="image/*"
                 style={{ display: "none" }}
                 onChange={handleFileUpload}

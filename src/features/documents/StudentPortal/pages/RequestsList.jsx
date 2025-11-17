@@ -8,6 +8,9 @@ import { Link } from "react-router-dom";
 const RequestsList = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
 
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
+
   const requests = [
     {
       id: "REQ-2025-001",
@@ -55,6 +58,20 @@ const RequestsList = () => {
     },
   ];
 
+  // ------------------------------
+  //  FILTER + SEARCH LOGIC
+  // ------------------------------
+  const filteredRequests = requests.filter((req) => {
+    const matchesSearch =
+      req.type.toLowerCase().includes(search.toLowerCase()) ||
+      req.id.toLowerCase().includes(search.toLowerCase());
+
+    const matchesFilter =
+      filter === "all" || req.status.toLowerCase() === filter;
+
+    return matchesSearch && matchesFilter;
+  });
+
   const handleViewDetails = (req) => setSelectedRequest(req);
   const handleCloseModal = () => setSelectedRequest(null);
 
@@ -66,6 +83,29 @@ const RequestsList = () => {
         <section className="table-section">
           <div className="section-header">
             <h2>All Document Requests</h2>
+
+            {/* SEARCH + FILTER */}
+            <div className="table-controls">
+              <input
+                type="text"
+                placeholder="🔍 Search by ID or document type..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="search-input"
+              />
+
+              <select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                className="filter-select"
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="approved">Approved</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
           </div>
 
           <div className="request-table">
@@ -77,6 +117,7 @@ const RequestsList = () => {
                 <col style={{ width: "15%" }} />
                 <col style={{ width: "20%" }} />
               </colgroup>
+
               <thead>
                 <tr>
                   <th>Request ID</th>
@@ -86,9 +127,10 @@ const RequestsList = () => {
                   <th>Action</th>
                 </tr>
               </thead>
+
               <tbody>
-                {requests.length > 0 ? (
-                  requests.map((req) => (
+                {filteredRequests.length > 0 ? (
+                  filteredRequests.map((req) => (
                     <tr key={req.id}>
                       <td className="request-id">
                         <strong>{req.id}</strong>
@@ -112,6 +154,7 @@ const RequestsList = () => {
                           {req.status}
                         </span>
                       </td>
+
                       <td className="action-cell">
                         <button
                           className="action-btn"
@@ -119,6 +162,7 @@ const RequestsList = () => {
                         >
                           View Details
                         </button>
+
                         {(req.status === "Approved" ||
                           req.status === "Completed") && (
                           <Link
@@ -134,7 +178,7 @@ const RequestsList = () => {
                 ) : (
                   <tr>
                     <td colSpan="5" className="center-cell">
-                      No requests found.
+                      No matching requests found.
                     </td>
                   </tr>
                 )}
@@ -144,7 +188,8 @@ const RequestsList = () => {
 
           <div className="table-footer">
             <span className="showing-text">
-              Showing {requests.length} requests (Total {requests.length})
+              Showing {filteredRequests.length} results (Total{" "}
+              {requests.length})
             </span>
           </div>
         </section>
@@ -156,7 +201,8 @@ const RequestsList = () => {
           onClose={handleCloseModal}
         />
       )}
-        <Footer />
+
+      <Footer />
     </div>
   );
 };
