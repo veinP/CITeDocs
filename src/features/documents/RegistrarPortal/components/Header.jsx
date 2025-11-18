@@ -91,7 +91,7 @@ export default function Header({ registrarName = "Registrar" }) {
                   boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
                   width: "320px",
                   zIndex: 1000,
-                  overflow: "hidden",
+                  overflow: "auto",
                 }}
               >
                 <div
