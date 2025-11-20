@@ -71,7 +71,7 @@ export default function RegistrarPortal() {
     },
     {
       id: "REQ-2025-006",
-      studentName: "V Pa",
+      studentName: "Ahtisa Manalo",
       studentId: "23-2124-005",
       documentType: "Transcript of Records",
       purpose: "Internship",
