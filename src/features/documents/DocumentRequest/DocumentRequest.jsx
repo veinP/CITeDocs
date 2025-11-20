@@ -23,7 +23,6 @@ export default function DocumentRequest() {
     proofFile: null,
   });
 
-  // ✅ Placeholder requests (like Django history)
   const [userRequests, setUserRequests] = useState([
     {
       id: "REQ-2025-001",
@@ -54,6 +53,19 @@ export default function DocumentRequest() {
   const [success, setSuccess] = useState(false);
   const [proofModal, setProofModal] = useState({ visible: false, imgUrl: "" });
 
+  // Prevent past dates
+  const today = new Date().toISOString().split("T")[0];
+
+  const formatDate = (isoDate) => {
+  const date = new Date(isoDate);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -72,7 +84,6 @@ export default function DocumentRequest() {
     const currentYear = new Date().getFullYear();
     const yearPrefix = `REQ-${currentYear}-`;
     
-    // Find the highest sequence number for the current year
     const yearRequests = userRequests.filter(req => req.id.startsWith(yearPrefix));
     let maxSeq = 0;
     
@@ -84,7 +95,6 @@ export default function DocumentRequest() {
       }
     });
     
-    // Increment and format with zero-padding
     const nextSeq = maxSeq + 1;
     return `${yearPrefix}${nextSeq.toString().padStart(3, '0')}`;
   };
@@ -92,7 +102,22 @@ export default function DocumentRequest() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Validate required fields
+    // VALIDATION
+    if (!formData.documentType) {
+      alert("Please select a document type.");
+      return;
+    }
+
+    if (!formData.dateNeeded) {
+      alert("Please choose a date needed.");
+      return;
+    }
+
+    if (formData.dateNeeded < today) {
+      alert("The date needed cannot be in the past.");
+      return;
+    }
+
     if (!formData.copies || formData.copies < 1) {
       alert("Please enter a valid number of copies (at least 1).");
       return;
@@ -106,21 +131,18 @@ export default function DocumentRequest() {
     const newRequest = {
       id: generateRequestId(),
       documentLabel:
-        documentTypes.find((doc) => doc.value === formData.documentType)
-          ?.label || "",
+      documentTypes.find((doc) => doc.value === formData.documentType)?.label || "",
       copies: formData.copies,
-      dateNeeded: formData.dateNeeded,
+      dateNeeded: formatDate(formData.dateNeeded), // <-- formatted!
       status: "Pending",
-      proofUrl: formData.proofFile
-        ? URL.createObjectURL(formData.proofFile)
-        : "",
+      proofUrl: formData.proofFile ? URL.createObjectURL(formData.proofFile) : "",
     };
+
 
     setUserRequests([newRequest, ...userRequests]);
     setSuccess(true);
     setTimeout(() => setSuccess(false), 3000);
 
-    // reset form
     setFormData({
       ...formData,
       documentType: "",
@@ -140,7 +162,6 @@ export default function DocumentRequest() {
 
   return (
     <div className="portal-container">
-      {/* ✅ Reuse the consistent portal header */}
       <Header studentName="John Doe" />
 
       <div className="request-container">
@@ -207,6 +228,7 @@ export default function DocumentRequest() {
                 name="dateNeeded"
                 value={formData.dateNeeded}
                 onChange={handleChange}
+                min={today}
                 required
               />
             </div>
@@ -222,7 +244,6 @@ export default function DocumentRequest() {
               />
             </div>
 
-            {/* ✅ Single styled upload input */}
             <div className="file-upload">
               <div className="upload-icon">📤</div>
               <p className="upload-title">Proof of Payment Upload <span style={{ color: "red" }}>*</span></p>
@@ -255,7 +276,6 @@ export default function DocumentRequest() {
           </form>
         </div>
 
-        {/* ✅ Request History Table */}
         <div className="history-card">
           <div className="history-header">
             <h3>Request History</h3>
@@ -299,7 +319,6 @@ export default function DocumentRequest() {
                         </span>
                       </td>
 
-                      {/* ✅ Payment Column */}
                       <td>
                         {req.proofUrl ? (
                           <button
@@ -313,7 +332,6 @@ export default function DocumentRequest() {
                         )}
                       </td>
 
-                      {/* ✅ Claim Slip Column */}
                       <td>
                         {req.status === "Approved" ||
                         req.status === "Completed" ? (
@@ -336,7 +354,6 @@ export default function DocumentRequest() {
         </div>
       </div>
 
-      {/* ✅ Proof Modal */}
       {proofModal.visible && (
         <div className="modal-overlay" onClick={closeProofModal}>
           <div
@@ -359,6 +376,7 @@ export default function DocumentRequest() {
           </div>
         </div>
       )}
+
       <Footer />
     </div>
   );
