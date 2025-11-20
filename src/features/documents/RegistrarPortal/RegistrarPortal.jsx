@@ -124,7 +124,7 @@ export default function RegistrarPortal() {
       label: "Completed",
       value: requests.filter((r) => r.status === "completed").length,
       color: "stat-success",
-      link: "/registrar?status=ready",
+      link: "/registrar?status=completed",
     },
     {
       label: "Rejected",
