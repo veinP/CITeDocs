@@ -1,9 +1,14 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import "../StudentPortal/StudentPortal.css"; 
-import Header from "../StudentPortal/components/Header"; 
+import "../StudentPortal/StudentPortal.css";
+import Header from "../StudentPortal/components/Header";
 import Footer from "../../../components/layout/Footer";
 import "./DocumentRequest.css";
+import { useAuthContext } from "../../auth/context/AuthContext";
+import {
+  createRequest as createRequestApi,
+  fetchRequests,
+} from "../../../api/requests";
 
 const documentTypes = [
   { value: "transcript", label: "Transcript of Records" },
@@ -14,42 +19,50 @@ const documentTypes = [
 ];
 
 export default function DocumentRequest() {
+  const { user, token } = useAuthContext();
   const [formData, setFormData] = useState({
-    studentId: "20-2423-001",
-    studentName: "John Doe",
     documentType: "",
     dateNeeded: "",
     copies: 1,
     proofFile: null,
   });
 
-  const [userRequests, setUserRequests] = useState([
-    {
-      id: "REQ-2025-001",
-      documentLabel: "Transcript of Records",
-      copies: 2,
-      dateNeeded: "Nov 15, 2025",
-      status: "Processing",
-      proofUrl: "https://via.placeholder.com/300x200.png?text=Proof+of+Payment",
-    },
-    {
-      id: "REQ-2025-002",
-      documentLabel: "Certificate of Enrollment",
-      copies: 1,
-      dateNeeded: "Nov 10, 2025",
-      status: "Approved",
-      proofUrl: "https://via.placeholder.com/300x200.png?text=Proof+of+Payment",
-    },
-    {
-      id: "REQ-2025-003",
-      documentLabel: "Good Moral Character",
-      copies: 1,
-      dateNeeded: "Nov 5, 2025",
-      status: "Completed",
-      proofUrl: "https://via.placeholder.com/300x200.png?text=Proof+of+Payment",
-    },
-  ]);
+  const fallbackRequests = useMemo(
+    () => [
+      {
+        id: "REQ-2025-001",
+        documentLabel: "Transcript of Records",
+        copies: 2,
+        dateNeeded: "Nov 15, 2025",
+        status: "Processing",
+        proofUrl:
+          "https://via.placeholder.com/300x200.png?text=Proof+of+Payment",
+      },
+      {
+        id: "REQ-2025-002",
+        documentLabel: "Certificate of Enrollment",
+        copies: 1,
+        dateNeeded: "Nov 10, 2025",
+        status: "Approved",
+        proofUrl:
+          "https://via.placeholder.com/300x200.png?text=Proof+of+Payment",
+      },
+      {
+        id: "REQ-2025-003",
+        documentLabel: "Good Moral Character",
+        copies: 1,
+        dateNeeded: "Nov 5, 2025",
+        status: "Completed",
+        proofUrl:
+          "https://via.placeholder.com/300x200.png?text=Proof+of+Payment",
+      },
+    ],
+    []
+  );
 
+  const [userRequests, setUserRequests] = useState(fallbackRequests);
+  const [isFetching, setIsFetching] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [proofModal, setProofModal] = useState({ visible: false, imgUrl: "" });
 
@@ -57,13 +70,14 @@ export default function DocumentRequest() {
   const today = new Date().toISOString().split("T")[0];
 
   const formatDate = (isoDate) => {
-  const date = new Date(isoDate);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-};
+    if (!isoDate) return "";
+    const date = new Date(isoDate);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
 
 
   const handleChange = (e) => {
@@ -83,23 +97,68 @@ export default function DocumentRequest() {
   const generateRequestId = () => {
     const currentYear = new Date().getFullYear();
     const yearPrefix = `REQ-${currentYear}-`;
-    
-    const yearRequests = userRequests.filter(req => req.id.startsWith(yearPrefix));
+
+    const yearRequests = userRequests.filter((req) =>
+      req.id.startsWith(yearPrefix)
+    );
     let maxSeq = 0;
-    
-    yearRequests.forEach(req => {
-      const seqStr = req.id.replace(yearPrefix, '');
+
+    yearRequests.forEach((req) => {
+      const seqStr = req.id.replace(yearPrefix, "");
       const seqNum = parseInt(seqStr, 10);
       if (!isNaN(seqNum) && seqNum > maxSeq) {
         maxSeq = seqNum;
       }
     });
-    
+
     const nextSeq = maxSeq + 1;
-    return `${yearPrefix}${nextSeq.toString().padStart(3, '0')}`;
+    return `${yearPrefix}${nextSeq.toString().padStart(3, "0")}`;
   };
 
-  const handleSubmit = (e) => {
+  const studentId = user?.studentId || user?.id || "";
+  const studentName = user?.name || "Student";
+
+  const loadRequests = useCallback(async () => {
+    if (!token || !studentId) {
+      setUserRequests(fallbackRequests);
+      return;
+    }
+
+    setIsFetching(true);
+    setFetchError(null);
+    try {
+      const data = await fetchRequests({
+        token,
+        query: { studentId },
+      });
+
+      if (Array.isArray(data)) {
+        setUserRequests(
+          data.map((req) => ({
+            id: req.referenceCode || req.id,
+            documentLabel:
+              req.documentType?.name || req.documentType || "Document",
+            copies: req.copies,
+            dateNeeded: formatDate(req.dateNeeded),
+            status: req.status || "Pending",
+            proofUrl: req.paymentProofUrl || req.proofUrl || "",
+          }))
+        );
+      }
+    } catch (error) {
+      console.error("Unable to load requests", error);
+      setFetchError(error.message);
+      setUserRequests(fallbackRequests);
+    } finally {
+      setIsFetching(false);
+    }
+  }, [token, studentId, fallbackRequests]);
+
+  useEffect(() => {
+    loadRequests();
+  }, [loadRequests]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // VALIDATION
@@ -128,28 +187,62 @@ export default function DocumentRequest() {
       return;
     }
 
-    const newRequest = {
-      id: generateRequestId(),
-      documentLabel:
-      documentTypes.find((doc) => doc.value === formData.documentType)?.label || "",
+    if (!studentId) {
+      alert("Missing student information. Please try signing in again.");
+      return;
+    }
+
+    const payload = {
+      studentId,
+      documentType: formData.documentType,
+      dateNeeded: formData.dateNeeded,
       copies: formData.copies,
-      dateNeeded: formatDate(formData.dateNeeded), // <-- formatted!
-      status: "Pending",
-      proofUrl: formData.proofFile ? URL.createObjectURL(formData.proofFile) : "",
+      proofFile: formData.proofFile,
     };
 
+    try {
+      const created = token
+        ? await createRequestApi({ payload, token })
+        : null;
 
-    setUserRequests([newRequest, ...userRequests]);
-    setSuccess(true);
-    setTimeout(() => setSuccess(false), 3000);
+      const newRequest = created
+        ? {
+            id: created.referenceCode || created.id,
+            documentLabel:
+              created.documentType?.name || created.documentType || "",
+            copies: created.copies,
+            dateNeeded: formatDate(created.dateNeeded),
+            status: created.status || "Pending",
+            proofUrl: created.paymentProofUrl || created.proofUrl || "",
+          }
+        : {
+            id: generateRequestId(),
+            documentLabel:
+              documentTypes.find(
+                (doc) => doc.value === formData.documentType
+              )?.label || "",
+            copies: formData.copies,
+            dateNeeded: formatDate(formData.dateNeeded),
+            status: "Pending",
+            proofUrl: formData.proofFile
+              ? URL.createObjectURL(formData.proofFile)
+              : "",
+          };
 
-    setFormData({
-      ...formData,
-      documentType: "",
-      dateNeeded: "",
-      copies: 1,
-      proofFile: null,
-    });
+      setUserRequests([newRequest, ...userRequests]);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+
+      setFormData({
+        documentType: "",
+        dateNeeded: "",
+        copies: 1,
+        proofFile: null,
+      });
+    } catch (error) {
+      console.error("Unable to submit request", error);
+      alert(error.message || "Unable to submit request.");
+    }
   };
 
   const openProofModal = (imgUrl) => {
@@ -162,7 +255,7 @@ export default function DocumentRequest() {
 
   return (
     <div className="portal-container">
-      <Header studentName="John Doe" />
+      <Header studentName={studentName} />
 
       <div className="request-container">
         <div className="form-card">
@@ -186,12 +279,7 @@ export default function DocumentRequest() {
           <form onSubmit={handleSubmit} className="form-grid" noValidate>
             <div className="form-group">
               <label>Student ID</label>
-              <input
-                type="text"
-                name="studentId"
-                value={formData.studentId}
-                readOnly
-              />
+              <input type="text" name="studentId" value={studentId} readOnly />
             </div>
 
             <div className="form-group">
@@ -199,7 +287,7 @@ export default function DocumentRequest() {
               <input
                 type="text"
                 name="studentName"
-                value={formData.studentName}
+                value={studentName}
                 readOnly
               />
             </div>
@@ -281,7 +369,13 @@ export default function DocumentRequest() {
             <h3>Request History</h3>
           </div>
           <div className="history-table-wrapper">
-            {userRequests.length === 0 ? (
+            {isFetching && <p className="empty-state">Loading requests…</p>}
+            {fetchError && (
+              <p className="alert alert-error">
+                {fetchError}. Showing cached data.
+              </p>
+            )}
+            {!isFetching && userRequests.length === 0 ? (
               <p className="empty-state">No requests found.</p>
             ) : (
               <table className="history-table">
