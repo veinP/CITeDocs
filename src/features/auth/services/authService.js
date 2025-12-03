@@ -1,10 +1,7 @@
 import api from "../../../api";
 
-// -----------------------
-// LOGIN
-// -----------------------
 export async function login(email, password) {
-  const res = await api.post("/api/auth/login", { email, password });
+  const res = await api.post("/auth/login", { email, password });
 
   const { token, user } = res.data;
 
@@ -14,19 +11,12 @@ export async function login(email, password) {
   return { token, user };
 }
 
-// -----------------------
-// LOGOUT
-// -----------------------
+export async function registerUser(payload) {
+  const res = await api.post("/auth/register", payload);
+  return res.data; // { message, user }
+}
+
 export function logout() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
-}
-
-// -----------------------
-// REGISTER USER
-// -----------------------
-export async function registerUser(payload) {
-
-  const res = await api.post("/api/auth/register", payload);
-  return res.data; // return backend response
 }

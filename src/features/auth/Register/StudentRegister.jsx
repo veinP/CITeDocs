@@ -18,44 +18,43 @@ export default function StudentRegister() {
 
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(false);
+  const [backendError, setBackendError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const navigate = useNavigate();
 
-  // -----------------------------
-  // Formatting + input control
-  // -----------------------------
-  const handleChange = (e) => {
+  function handleChange(e) {
     const { name, value, type, checked } = e.target;
-    let newValue = value;
+    let updated = value;
 
-    // Auto-format: "XX-XXXX-XXX"
+    // Auto-format student ID: XX-XXXX-XXX
     if (name === "registrarId") {
       const digits = value.replace(/\D/g, "");
-      if (digits.length <= 2) {
-        newValue = digits;
-      } else if (digits.length <= 6) {
-        newValue = digits.slice(0, 2) + "-" + digits.slice(2);
-      } else if (digits.length <= 9) {
-        newValue = digits.slice(0, 2) + "-" + digits.slice(2, 6) + "-" + digits.slice(6);
-      } else {
-        newValue = digits.slice(0, 2) + "-" + digits.slice(2, 6) + "-" + digits.slice(6, 9);
-      }
+      if (digits.length <= 2) updated = digits;
+      else if (digits.length <= 6) updated = digits.slice(0, 2) + "-" + digits.slice(2);
+      else if (digits.length <= 9)
+        updated = digits.slice(0, 2) + "-" + digits.slice(2, 6) + "-" + digits.slice(6);
+      else
+        updated =
+          digits.slice(0, 2) +
+          "-" +
+          digits.slice(2, 6) +
+          "-" +
+          digits.slice(6, 9);
     }
 
     setFormData({
       ...formData,
-      [name]: type === "checkbox" ? checked : newValue,
+      [name]: type === "checkbox" ? checked : updated,
     });
-  };
+  }
 
-  // -----------------------------
-  // Submit Handler (with backend)
-  // -----------------------------
-  const handleSubmit = async (e) => {
+  async function handleSubmit(e) {
     e.preventDefault();
+    setBackendError("");
 
+    // Validate on frontend
     const validationErrors = validateStudentRegister(formData);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -65,28 +64,23 @@ export default function StudentRegister() {
     setErrors({});
 
     try {
-      // Build the payload for backend
-      const payload = {
-        name: `${formData.firstName} ${formData.lastName}`,
+      await registerUser({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
-        role: "STUDENT",
-        sid: formData.registrarId, // student ID
-        aid: null,
-      };
-
-      // Send to backend
-      await registerUser(payload);
+        role: "STUDENT",              // REQUIRED
+        studentId: formData.registrarId, // Use student ID here
+        adminId: null,
+      });
 
       setSuccess(true);
+      setTimeout(() => navigate("/student-login"), 1500);
 
-      setTimeout(() => {
-        navigate("/student-login");
-      }, 2000);
     } catch (err) {
-      setErrors({ email: "This email is already taken." });
+      setBackendError(err.response?.data?.error || "Registration failed.");
     }
-  };
+  }
 
   return (
     <div className="register-page">
@@ -112,12 +106,14 @@ export default function StudentRegister() {
           <div className="register-card">
             {success && (
               <div className="alert alert-success">
-                Registration successful! Redirecting to login...
+                Registration successful! Redirecting...
               </div>
             )}
 
+            {backendError && <div className="alert alert-error">{backendError}</div>}
+
             <form onSubmit={handleSubmit}>
-              {/* NAME ROW */}
+              {/* First + Last Name */}
               <div className="name-row">
                 <div className="input-group">
                   <label htmlFor="firstName">First Name</label>
@@ -129,9 +125,7 @@ export default function StudentRegister() {
                     onChange={handleChange}
                     placeholder="Enter first name"
                   />
-                  {errors.firstName && (
-                    <span className="field-error">{errors.firstName}</span>
-                  )}
+                  {errors.firstName && <span className="field-error">{errors.firstName}</span>}
                 </div>
 
                 <div className="input-group">
@@ -144,13 +138,11 @@ export default function StudentRegister() {
                     onChange={handleChange}
                     placeholder="Enter last name"
                   />
-                  {errors.lastName && (
-                    <span className="field-error">{errors.lastName}</span>
-                  )}
+                  {errors.lastName && <span className="field-error">{errors.lastName}</span>}
                 </div>
               </div>
 
-              {/* STUDENT ID */}
+              {/* Student ID */}
               <div className="input-group">
                 <label htmlFor="registrarId">Student ID</label>
                 <input
@@ -162,12 +154,10 @@ export default function StudentRegister() {
                   placeholder="XX-XXXX-XXX"
                   maxLength={11}
                 />
-                {errors.registrarId && (
-                  <span className="field-error">{errors.registrarId}</span>
-                )}
+                {errors.registrarId && <span className="field-error">{errors.registrarId}</span>}
               </div>
 
-              {/* EMAIL */}
+              {/* Email */}
               <div className="input-group">
                 <label htmlFor="email">Email Address</label>
                 <input
@@ -178,12 +168,10 @@ export default function StudentRegister() {
                   onChange={handleChange}
                   placeholder="Enter your email"
                 />
-                {errors.email && (
-                  <span className="field-error">{errors.email}</span>
-                )}
+                {errors.email && <span className="field-error">{errors.email}</span>}
               </div>
 
-              {/* PASSWORD */}
+              {/* Password */}
               <div className="input-group">
                 <label htmlFor="password">Password</label>
                 <div className="password-input-wrapper">
@@ -203,12 +191,10 @@ export default function StudentRegister() {
                     {showPassword ? "Hide" : "Show"}
                   </button>
                 </div>
-                {errors.password && (
-                  <span className="field-error">{errors.password}</span>
-                )}
+                {errors.password && <span className="field-error">{errors.password}</span>}
               </div>
 
-              {/* CONFIRM PASSWORD */}
+              {/* Confirm Password */}
               <div className="input-group">
                 <label htmlFor="confirmPassword">Confirm Password</label>
                 <div className="password-input-wrapper">
@@ -235,7 +221,7 @@ export default function StudentRegister() {
                 )}
               </div>
 
-              {/* TERMS */}
+              {/* Terms */}
               <div className="terms-checkbox">
                 <input
                   type="checkbox"
@@ -246,19 +232,17 @@ export default function StudentRegister() {
                 />
                 <label htmlFor="agreedToTerms">
                   I agree to the <a href="/terms">Terms of Service</a> and{" "}
-                  <a href="/privacy">Privacy Policy</a>
+                  <a href="/privacy">Privacy Policy</a>.
                 </label>
                 {errors.agreedToTerms && (
                   <span className="field-error">{errors.agreedToTerms}</span>
                 )}
               </div>
 
-              {/* SUBMIT */}
               <button type="submit" className="btn btn-primary btn-signup">
                 Sign Up
               </button>
 
-              {/* BACK BUTTON */}
               <Link to="/student-login" className="btn btn-secondary btn-back">
                 Back to Login
               </Link>

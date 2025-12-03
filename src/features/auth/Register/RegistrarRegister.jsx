@@ -2,9 +2,8 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Register.css";
 import logo from "../../../assets/images/app_logo.png";
-
 import { validateRegistrarRegister } from "../validation/registrarValidation";
-import { registerUser } from "../services/authService"; // 🔥 backend registration
+import { registerUser } from "../services/authService"; // ✅ connect backend
 
 export default function RegistrarRegister() {
   const [formData, setFormData] = useState({
@@ -18,15 +17,12 @@ export default function RegistrarRegister() {
   });
 
   const [errors, setErrors] = useState({});
-  const [backendError, setBackendError] = useState("");
   const [success, setSuccess] = useState(false);
-
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   const navigate = useNavigate();
 
-  // Handle field changes
+  // Handle Input Change
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
@@ -36,12 +32,11 @@ export default function RegistrarRegister() {
     });
   };
 
-  // Submit registration
+  // Submit Form
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setBackendError("");
 
-    // Run client-side validation
+    // Frontend validation
     const validationErrors = validateRegistrarRegister(formData);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -50,26 +45,25 @@ export default function RegistrarRegister() {
 
     setErrors({});
 
+    // Build JSON for backend
+    const payload = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      password: formData.password,
+      role: "REGISTRAR", // 📌 important
+      studentId: null, // 📌 Registrar has no studentId
+      adminId: formData.registrarId, // 📌 goes to `aid` column
+    };
+
     try {
-      // 🔥 Send to backend
-      await registerUser({
-        name: `${formData.firstName} ${formData.lastName}`,
-        email: formData.email,
-        password: formData.password,
-        role: "REGISTRAR",
-        rid: formData.registrarId,
-        sid: null,
-        aid: null,
-      });
+      await registerUser(payload);
 
-      // 🔥 Show success message
       setSuccess(true);
-
-      // Redirect after 2 sec
       setTimeout(() => navigate("/registrar-login"), 2000);
-
     } catch (err) {
-      setBackendError("Registration failed. Email may already exist.");
+      console.error("Registration error:", err);
+      setErrors({ global: "Registration failed. Please try again." });
     }
   };
 
@@ -80,8 +74,7 @@ export default function RegistrarRegister() {
       </header>
 
       <div className="register-content">
-
-        {/* LEFT SIDE */}
+        {/* Left Section */}
         <div className="register-welcome-section">
           <div className="register-icon-circle">
             <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor">
@@ -90,20 +83,14 @@ export default function RegistrarRegister() {
           </div>
           <h1 className="register-welcome-title">SIGN UP AS A REGISTRAR</h1>
           <p className="register-welcome-text">
-            Sign up to help students<br />
-            navigate their requests and stay<br />
-            informed every step of the way.
+            Help manage student documents and<br />
+            ensure smooth processing every day.
           </p>
         </div>
 
-        {/* RIGHT SIDE - FORM */}
+        {/* Right Section */}
         <div className="register-form-section">
           <div className="register-card">
-
-            {/* Backend Error */}
-            {backendError && (
-              <div className="alert alert-error">{backendError}</div>
-            )}
 
             {/* Success Message */}
             {success && (
@@ -112,10 +99,14 @@ export default function RegistrarRegister() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit}>
+            {/* Global Backend Error */}
+            {errors.global && (
+              <div className="alert alert-error">{errors.global}</div>
+            )}
 
+            <form onSubmit={handleSubmit}>
+              {/* Name Row */}
               <div className="name-row">
-                {/* First Name */}
                 <div className="input-group">
                   <label htmlFor="firstName">First Name</label>
                   <input
@@ -131,7 +122,6 @@ export default function RegistrarRegister() {
                   )}
                 </div>
 
-                {/* Last Name */}
                 <div className="input-group">
                   <label htmlFor="lastName">Last Name</label>
                   <input
@@ -228,11 +218,13 @@ export default function RegistrarRegister() {
                   </button>
                 </div>
                 {errors.confirmPassword && (
-                  <span className="field-error">{errors.confirmPassword}</span>
+                  <span className="field-error">
+                    {errors.confirmPassword}
+                  </span>
                 )}
               </div>
 
-              {/* Terms */}
+              {/* Terms Checkbox */}
               <div className="terms-checkbox">
                 <input
                   type="checkbox"
@@ -242,12 +234,13 @@ export default function RegistrarRegister() {
                   onChange={handleChange}
                 />
                 <label htmlFor="agreedToTerms">
-                  I agree to the{" "}
-                  <a href="/terms">Terms of Service</a> and{" "}
+                  I agree to the <a href="/terms">Terms of Service</a> and{" "}
                   <a href="/privacy">Privacy Policy</a>
                 </label>
                 {errors.agreedToTerms && (
-                  <span className="field-error">{errors.agreedToTerms}</span>
+                  <span className="field-error">
+                    {errors.agreedToTerms}
+                  </span>
                 )}
               </div>
 
