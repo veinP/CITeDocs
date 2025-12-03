@@ -1,90 +1,64 @@
-import React, { createContext, useContext, useState } from "react";
+// src/features/auth/context/AuthContext.jsx
+import React, { createContext, useContext, useEffect, useState } from "react";
+import api from "../../../api";
+import { logout as serviceLogout } from "../services/authService"; // optional if you want to call service
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem("user");
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [error, setError] = useState(null);
+  useEffect(() => {
+    async function loadSession() {
+      const token = localStorage.getItem("token");
 
-  // Mock users 
-  const users = [
-    {
-      email: "student@cit.edu",
-      password: "12345",
-      role: "student",
-      name: "John Doe",
-    },
-    {
-      email: "registrar@cit.edu",
-      password: "12345",
-      role: "registrar",
-      name: "Registrar Jane",
-    },
-  ];
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
 
-  // LOGIN
-  const login = async (email, password, expectedRole) => {
-    setError(null);
+      try {
+        const res = await api.get("/users/me");
+        setUser(res.data);
+      } catch (err) {
+        console.warn("Session expired or invalid token.");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
 
-    const foundUser = users.find(
-      (u) => u.email === email && u.password === password
-    );
-
-    if (!foundUser) {
-      setError("Invalid email or password.");
-      return null;
+      setIsLoading(false);
     }
 
-    // Enforce login page role
-    if (foundUser.role !== expectedRole) {
-      setError(
-        `Unauthorized: Please use the ${
-          foundUser.role === "registrar" ? "Registrar" : "Student"
-        } login page.`
-      );
-      return null;
-    }
+    loadSession();
+  }, []);
 
-    setUser(foundUser);
-    localStorage.setItem("user", JSON.stringify(foundUser));
-    return foundUser;
-  };
+  // Called after successful login
+  function loginContext(userData) {
+    setUser(userData);
+  }
 
-  // FORGOT PASSWORD 
-
-  const forgotPassword = (email) => {
-    setError(null);
-
-    const foundUser = users.find((u) => u.email === email);
-
-    if (!foundUser) {
-      setError("Email not found in the system.");
-      return null;
-    }
-
-    // Success Message
-    return `A password reset link has been sent to ${email}`;
-  };
-
-  // LOGOUT
-  const logout = () => {
-    setUser(null);
+  // Keep old name too
+  function logoutContext() {
+    localStorage.removeItem("token");
     localStorage.removeItem("user");
-  };
+    setUser(null);
+  }
+
+  // Provide a convenient `logout()` function (alias) so components expecting `logout()` work
+  function logout() {
+    // If you have additional service cleanup, call it:
+    try {
+      serviceLogout(); // remove localStorage there too (safe even if it duplicates)
+    } catch (e) {
+      // ignore if serviceLogout not present
+    }
+    logoutContext();
+  }
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        login,
-        logout,
-        forgotPassword,
-        error,
-      }}
+      value={{ user, loginContext, logoutContext, logout, isLoading }}
     >
       {children}
     </AuthContext.Provider>

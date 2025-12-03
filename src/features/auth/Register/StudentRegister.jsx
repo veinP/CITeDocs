@@ -1,52 +1,60 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import './Register.css';
-import logo from '../../../assets/images/app_logo.png';
-import { validateStudentRegister } from '../validation/studentValidation';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import "./Register.css";
+import logo from "../../../assets/images/app_logo.png";
+import { validateStudentRegister } from "../validation/studentValidation";
+import { registerUser } from "../services/authService";
 
 export default function StudentRegister() {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    registrarId: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    agreedToTerms: false
+    firstName: "",
+    lastName: "",
+    registrarId: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    agreedToTerms: false,
   });
+
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(false);
+  const [backendError, setBackendError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
+  function handleChange(e) {
     const { name, value, type, checked } = e.target;
-    let newValue = value;
+    let updated = value;
 
-    // Auto-format for registrarId
+    // Auto-format student ID: XX-XXXX-XXX
     if (name === "registrarId") {
-      const digits = value.replace(/\D/g, ''); // Only numbers
-      if (digits.length <= 2) {
-        newValue = digits;
-      } else if (digits.length <= 6) {
-        newValue = digits.slice(0, 2) + '-' + digits.slice(2);
-      } else if (digits.length <= 9) {
-        newValue = digits.slice(0, 2) + '-' + digits.slice(2, 6) + '-' + digits.slice(6);
-      } else {
-        newValue = digits.slice(0, 2) + '-' + digits.slice(2, 6) + '-' + digits.slice(6, 9);
-      }
+      const digits = value.replace(/\D/g, "");
+      if (digits.length <= 2) updated = digits;
+      else if (digits.length <= 6) updated = digits.slice(0, 2) + "-" + digits.slice(2);
+      else if (digits.length <= 9)
+        updated = digits.slice(0, 2) + "-" + digits.slice(2, 6) + "-" + digits.slice(6);
+      else
+        updated =
+          digits.slice(0, 2) +
+          "-" +
+          digits.slice(2, 6) +
+          "-" +
+          digits.slice(6, 9);
     }
 
     setFormData({
       ...formData,
-      [name]: type === 'checkbox' ? checked : newValue
+      [name]: type === "checkbox" ? checked : updated,
     });
-  };
+  }
 
-  const handleSubmit = (e) => {
+  async function handleSubmit(e) {
     e.preventDefault();
+    setBackendError("");
 
+    // Validate on frontend
     const validationErrors = validateStudentRegister(formData);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -54,11 +62,25 @@ export default function StudentRegister() {
     }
 
     setErrors({});
-    setSuccess(true);
-    setTimeout(() => {
-      navigate('/student-login');
-    }, 2000);
-  };
+
+    try {
+      await registerUser({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        role: "STUDENT",              // REQUIRED
+        studentId: formData.registrarId, // Use student ID here
+        adminId: null,
+      });
+
+      setSuccess(true);
+      setTimeout(() => navigate("/student-login"), 1500);
+
+    } catch (err) {
+      setBackendError(err.response?.data?.error || "Registration failed.");
+    }
+  }
 
   return (
     <div className="register-page">
@@ -70,7 +92,7 @@ export default function StudentRegister() {
         <div className="register-welcome-section">
           <div className="register-icon-circle">
             <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
             </svg>
           </div>
           <h1 className="register-welcome-title">SIGN UP AS A STUDENT</h1>
@@ -84,11 +106,14 @@ export default function StudentRegister() {
           <div className="register-card">
             {success && (
               <div className="alert alert-success">
-                Registration successful! Redirecting to login...
+                Registration successful! Redirecting...
               </div>
             )}
 
+            {backendError && <div className="alert alert-error">{backendError}</div>}
+
             <form onSubmit={handleSubmit}>
+              {/* First + Last Name */}
               <div className="name-row">
                 <div className="input-group">
                   <label htmlFor="firstName">First Name</label>
@@ -117,6 +142,7 @@ export default function StudentRegister() {
                 </div>
               </div>
 
+              {/* Student ID */}
               <div className="input-group">
                 <label htmlFor="registrarId">Student ID</label>
                 <input
@@ -126,11 +152,12 @@ export default function StudentRegister() {
                   value={formData.registrarId}
                   onChange={handleChange}
                   placeholder="XX-XXXX-XXX"
-                  maxLength={11} // To limit typing beyond the format
+                  maxLength={11}
                 />
                 {errors.registrarId && <span className="field-error">{errors.registrarId}</span>}
               </div>
 
+              {/* Email */}
               <div className="input-group">
                 <label htmlFor="email">Email Address</label>
                 <input
@@ -144,6 +171,7 @@ export default function StudentRegister() {
                 {errors.email && <span className="field-error">{errors.email}</span>}
               </div>
 
+              {/* Password */}
               <div className="input-group">
                 <label htmlFor="password">Password</label>
                 <div className="password-input-wrapper">
@@ -160,12 +188,13 @@ export default function StudentRegister() {
                     className="password-toggle"
                     onClick={() => setShowPassword(!showPassword)}
                   >
-                    {showPassword ? 'Hide' : 'Show'}
+                    {showPassword ? "Hide" : "Show"}
                   </button>
                 </div>
                 {errors.password && <span className="field-error">{errors.password}</span>}
               </div>
 
+              {/* Confirm Password */}
               <div className="input-group">
                 <label htmlFor="confirmPassword">Confirm Password</label>
                 <div className="password-input-wrapper">
@@ -180,14 +209,19 @@ export default function StudentRegister() {
                   <button
                     type="button"
                     className="password-toggle"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    onClick={() =>
+                      setShowConfirmPassword(!showConfirmPassword)
+                    }
                   >
-                    {showConfirmPassword ? 'Hide' : 'Show'}
+                    {showConfirmPassword ? "Hide" : "Show"}
                   </button>
                 </div>
-                {errors.confirmPassword && <span className="field-error">{errors.confirmPassword}</span>}
+                {errors.confirmPassword && (
+                  <span className="field-error">{errors.confirmPassword}</span>
+                )}
               </div>
 
+              {/* Terms */}
               <div className="terms-checkbox">
                 <input
                   type="checkbox"
@@ -197,9 +231,12 @@ export default function StudentRegister() {
                   onChange={handleChange}
                 />
                 <label htmlFor="agreedToTerms">
-                  I agree to the <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>
+                  I agree to the <a href="/terms">Terms of Service</a> and{" "}
+                  <a href="/privacy">Privacy Policy</a>.
                 </label>
-                {errors.agreedToTerms && <span className="field-error">{errors.agreedToTerms}</span>}
+                {errors.agreedToTerms && (
+                  <span className="field-error">{errors.agreedToTerms}</span>
+                )}
               </div>
 
               <button type="submit" className="btn btn-primary btn-signup">

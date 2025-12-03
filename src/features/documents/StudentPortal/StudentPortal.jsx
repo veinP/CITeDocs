@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "./StudentPortal.css";
 import Header from "./components/Header";
 import Footer from "../../../components/layout/Footer";
@@ -7,14 +7,116 @@ import RequestTable from "./components/RequestTable";
 import ActivityPanel from "./components/ActivityPanel";
 import RequestDetailsModal from "./components/RequestDetailsModal";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useAuthContext } from "../../auth/context/AuthContext";
+import { fetchRequests } from "../../../api/requests";
 
 const StudentPortal = () => {
+  const { user, token } = useAuthContext();
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [requests, setRequests] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
 
   // Check if current path is the dashboard root (/student)
   const isDashboard = location.pathname === "/student";
+
+  const fallbackRequests = useMemo(
+    () => [
+      {
+        id: "REQ-2025-001",
+        type: "Transcript of Records",
+        date: "Jan 10, 2025",
+        status: "Processing",
+        copies: 2,
+        dateNeeded: "Feb 1, 2025",
+        created: "Jan 10, 2025",
+        lastUpdated: "Today",
+      },
+      {
+        id: "REQ-2025-002",
+        type: "Certificate of Enrollment",
+        date: "Jan 14, 2025",
+        status: "Approved",
+        copies: 1,
+        dateNeeded: "Feb 2, 2025",
+        created: "Jan 14, 2025",
+        lastUpdated: "Yesterday",
+      },
+      {
+        id: "REQ-2025-003",
+        type: "Diploma Copy",
+        date: "Jan 13, 2025",
+        status: "Pending",
+        copies: 2,
+        dateNeeded: "Feb 3, 2025",
+        created: "Jan 13, 2025",
+        lastUpdated: "Today",
+      },
+      {
+        id: "REQ-2025-004",
+        type: "Good Moral Character",
+        date: "Jan 12, 2025",
+        status: "Completed",
+        copies: 1,
+        dateNeeded: "Feb 4, 2025",
+        created: "Jan 12, 2025",
+        lastUpdated: "3 days ago",
+      },
+    ],
+    []
+  );
+
+  useEffect(() => {
+    const loadRequests = async () => {
+      if (!token || !user?.id) {
+        setRequests(fallbackRequests);
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
+      setFetchError(null);
+      try {
+        const data = await fetchRequests({
+          token,
+          query: { studentId: user.studentId || user.id },
+        });
+        if (Array.isArray(data)) {
+          setRequests(
+            data.map((req) => ({
+              id: req.referenceCode || req.id,
+              type: req.documentType?.name || req.documentType,
+              date: req.createdAt
+                ? new Date(req.createdAt).toLocaleDateString()
+                : "",
+              status: req.status,
+              copies: req.copies,
+              dateNeeded: req.dateNeeded
+                ? new Date(req.dateNeeded).toLocaleDateString()
+                : "",
+              created: req.createdAt
+                ? new Date(req.createdAt).toLocaleDateString()
+                : "",
+              lastUpdated: req.updatedAt
+                ? new Date(req.updatedAt).toLocaleDateString()
+                : "",
+            }))
+          );
+        } else {
+          setRequests([]);
+        }
+      } catch (error) {
+        console.error("Unable to load student requests", error);
+        setFetchError(error.message);
+        setRequests(fallbackRequests);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadRequests();
+  }, [token, user, fallbackRequests]);
 
   const stats = [
     {
@@ -22,65 +124,28 @@ const StudentPortal = () => {
       subtitle: "Submit a new document request",
       icon: "📄",
       variant: "primary",
-      onClick: () => navigate("/student/request-form"), // ✅ link to request form
+      onClick: () => navigate("/student/request-form"),
     },
     {
       title: "Documents Requested",
       subtitle: "View all your previous requests",
-      value: "5",
+      value: requests.length.toString(),
       icon: "📋",
       variant: "yellow",
-      onClick: () => navigate("/student/requests"), // ✅ link to all requests
+      onClick: () => navigate("/student/requests"),
     },
     {
       title: "Ready for Pickup",
       subtitle: "Approved documents",
-      value: "2",
+      value: requests
+        .filter((item) =>
+          ["Approved", "Completed", "READY_FOR_PICKUP"].includes(
+            item.status || ""
+          )
+        )
+        .length.toString(),
       icon: "✓",
       variant: "white",
-    },
-  ];
-
-  const requests = [
-    {
-      id: "REQ-2025-001",
-      type: "Transcript of Records",
-      date: "Jan 10, 2025",
-      status: "Processing",
-      copies: 2,
-      dateNeeded: "Feb 1, 2025",
-      created: "Jan 10, 2025",
-      lastUpdated: "Today",
-    },
-    {
-      id: "REQ-2025-002",
-      type: "Certificate of Enrollment",
-      date: "Jan 14, 2025",
-      status: "Approved",
-      copies: 1,
-      dateNeeded: "Feb 2, 2025",
-      created: "Jan 14, 2025",
-      lastUpdated: "Yesterday",
-    },
-    {
-      id: "REQ-2025-003",
-      type: "Diploma Copy",
-      date: "Jan 13, 2025",
-      status: "Pending",
-      copies: 2,
-      dateNeeded: "Feb 3, 2025",
-      created: "Jan 13, 2025",
-      lastUpdated: "Today",
-    },
-    {
-      id: "REQ-2025-004",
-      type: "Good Moral Character",
-      date: "Jan 12, 2025",
-      status: "Completed",
-      copies: 1,
-      dateNeeded: "Feb 4, 2025",
-      created: "Jan 12, 2025",
-      lastUpdated: "3 days ago",
     },
   ];
 
@@ -128,7 +193,17 @@ const StudentPortal = () => {
               ))}
             </div>
 
-            <RequestTable requests={requests} onViewDetails={handleViewDetails} />
+            {fetchError && (
+              <div className="alert alert-error">{fetchError}</div>
+            )}
+            {isLoading ? (
+              <p className="empty-state">Loading your requests…</p>
+            ) : (
+              <RequestTable
+                requests={requests}
+                onViewDetails={handleViewDetails}
+              />
+            )}
           </div>
 
           <ActivityPanel activities={activities} />

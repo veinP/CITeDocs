@@ -13,26 +13,43 @@ import RequestsList from "./features/documents/StudentPortal/pages/RequestsList"
 import DocumentRequest from "./features/documents/DocumentRequest/DocumentRequest";
 import ForgotPasswordPage from "./features/auth/ForgotPassword/ForgotPasswordPage";
 
-
-
-import { AuthProvider, useAuthContext } from "./features/auth/context/AuthContext";
+import {
+  AuthProvider,
+  useAuthContext,
+} from "./features/auth/context/AuthContext";
 
 import "./styles/global.css";
 
 function AppContent() {
-  const { user } = useAuthContext();
+  const { user, isLoading } = useAuthContext();
+
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          display: "grid",
+          placeItems: "center",
+          minHeight: "100vh",
+          fontFamily: "Montserrat, sans-serif",
+        }}
+      >
+        <p>Loading session...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <main style={{ flex: 1 }}>
         <Routes>
-          {/* Default redirect based on role */}
+
+          {/* Default redirect based on user role */}
           <Route
             path="/"
             element={
               !user ? (
                 <Navigate to="/student-login" />
-              ) : user.role === "registrar" ? (
+              ) : user.role === "REGISTRAR" ? (
                 <Navigate to="/registrar" />
               ) : (
                 <Navigate to="/student" />
@@ -48,34 +65,36 @@ function AppContent() {
           <Route path="/registrar-login" element={<RegistrarLogin />} />
           <Route path="/registrar-register" element={<RegistrarRegister />} />
 
-          {/* Forgot Password Route */}
+          {/* Forgot Password */}
           <Route path="/forgot-password/:role" element={<ForgotPasswordPage />} />
 
           {/* Student Portal */}
           <Route
             path="/student/*"
             element={
-              user && user.role === "student" ? (
+              user && user.role === "STUDENT" ? (
                 <StudentPortal />
               ) : (
                 <Navigate to="/student-login" replace />
               )
             }
           />
+
           <Route
             path="/student/request-form"
             element={
-              user && user.role === "student" ? (
+              user && user.role === "STUDENT" ? (
                 <DocumentRequest />
               ) : (
                 <Navigate to="/student-login" replace />
               )
             }
           />
+
           <Route
             path="/student/requests"
             element={
-              user && user.role === "student" ? (
+              user && user.role === "STUDENT" ? (
                 <RequestsList />
               ) : (
                 <Navigate to="/student-login" replace />
@@ -87,7 +106,7 @@ function AppContent() {
           <Route
             path="/registrar/*"
             element={
-              user && user.role === "registrar" ? (
+              user && user.role === "REGISTRAR" ? (
                 <RegistrarPortal />
               ) : (
                 <Navigate to="/registrar-login" replace />
