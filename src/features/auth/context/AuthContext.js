@@ -1,31 +1,26 @@
 // src/features/auth/context/AuthContext.jsx
 import React, { createContext, useContext, useEffect, useState } from "react";
 import api from "../../../api";
-import { logout as serviceLogout } from "../services/authService"; // optional if you want to call service
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadSession() {
-      const token = localStorage.getItem("token");
+      const storedToken = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
 
-      if (!token) {
+      if (!storedToken || !storedUser) {
         setIsLoading(false);
         return;
       }
 
-      try {
-        const res = await api.get("/users/me");
-        setUser(res.data);
-      } catch (err) {
-        console.warn("Session expired or invalid token.");
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-      }
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
 
       setIsLoading(false);
     }
@@ -33,32 +28,37 @@ export function AuthProvider({ children }) {
     loadSession();
   }, []);
 
-  // Called after successful login
-  function loginContext(userData) {
-    setUser(userData);
+  // ============================================
+  // ✔ Save BOTH token + user after login
+  // ============================================
+  function loginContext(token, user) {
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
+
+    setToken(token);
+    setUser(user);
   }
 
-  // Keep old name too
+  // ============================================
+  // ✔ Logout
+  // ============================================
   function logoutContext() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    setUser(null);
-  }
 
-  // Provide a convenient `logout()` function (alias) so components expecting `logout()` work
-  function logout() {
-    // If you have additional service cleanup, call it:
-    try {
-      serviceLogout(); // remove localStorage there too (safe even if it duplicates)
-    } catch (e) {
-      // ignore if serviceLogout not present
-    }
-    logoutContext();
+    setUser(null);
+    setToken(null);
   }
 
   return (
     <AuthContext.Provider
-      value={{ user, loginContext, logoutContext, logout, isLoading }}
+      value={{
+        user,
+        token,
+        loginContext,
+        logoutContext,
+        isLoading,
+      }}
     >
       {children}
     </AuthContext.Provider>
